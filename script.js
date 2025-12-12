@@ -8,7 +8,9 @@ const currentUser = {
 const users = [
     currentUser,
     { id: 2, nickname: "ApexGuru", avatar: "https://ui-avatars.com/api/?name=Apex+Guru&background=random" },
-    { id: 3, nickname: "LWC_Dev", avatar: "https://ui-avatars.com/api/?name=LWC+Dev&background=random" }
+    { id: 3, nickname: "LWC_Dev", avatar: "https://ui-avatars.com/api/?name=LWC+Dev&background=random" },
+    { id: 4, nickname: "Abhishek R", avatar: "https://ui-avatars.com/api/?name=Abhishek+R&background=random" },
+    { id: 5, nickname: "Vishal Verma", avatar: "https://ui-avatars.com/api/?name=Vishal+Verma&background=random" }
 ];
 
 // Global Answers Data
@@ -49,7 +51,7 @@ let allAnswers = [
 let questions = [
     {
         id: 101,
-        user_id: 2,
+        user_id: 1, // Changed to currentUser for testing
         title: "How to handle large data volumes in LWC?",
         body: "I'm facing performance issues when rendering a datatable with over 5000 records. What are the best practices for pagination or infinite scrolling in Lightning Web Components?",
         status: "Open",
@@ -145,10 +147,14 @@ const modal = document.getElementById('question-modal');
 const closeModalBtn = document.querySelector('.close-modal');
 const cancelModalBtn = document.querySelector('.close-modal-btn');
 const questionForm = document.getElementById('question-form');
+const qTitleInput = document.getElementById('q-title');
+const qBodyInput = document.getElementById('q-body');
+const postQuestionBtn = document.getElementById('post-question-btn');
+const qFileInput = document.getElementById('q-file');
+const qFileNameDisplay = document.getElementById('q-file-name');
+const qPreviewImg = document.getElementById('q-preview-img');
 const filterLinks = document.querySelectorAll('.filters a');
 const sortSelect = document.getElementById('sort-select');
-
-// Answer Edit Modal Elements
 const answerEditModal = document.getElementById('answer-edit-modal');
 const closeAnswerEditBtn = document.querySelector('.close-answer-edit');
 const cancelAnswerEditBtn = document.querySelector('.close-answer-edit-btn');
@@ -163,14 +169,30 @@ let questionToDelete = null;
 let editingAnswerId = null;
 let answerToDelete = null;
 let currentPage = 1;
-const itemsPerPage = 10; // Changed to 10
-let selectedRoles = []; // New state for selected roles
-let searchQuery = ''; // New state for search query
-let searchScope = 'content'; // New state for search scope
+const itemsPerPage = 10;
+let selectedRoles = [];
+let searchQuery = '';
+let searchScope = 'content';
+let currentQuestionImage = null; // Store base64 image for new question
+let currentAnswerImage = null; // Store base64 image for new answer
 
 // Helper Functions
 function getUser(id) {
     return users.find(u => u.id === id) || users[0];
+}
+
+function getAcceptButtonHtml(isQuestionAuthor, answer, question) {
+    if (!isQuestionAuthor) return '';
+
+    if (answer.is_accepted) {
+        return `<button class="accept-btn unaccept-btn" onclick="acceptAnswer(${answer.id})">✓ 채택 취소</button>`;
+    }
+
+    if (!question.has_accepted_answer) {
+        return `<button class="accept-btn" onclick="acceptAnswer(${answer.id})">✓ 채택하기</button>`;
+    }
+
+    return '';
 }
 
 function timeAgo(dateString) {
@@ -291,9 +313,13 @@ function renderFeed() {
                     </div>
                 </div>
                 <a href="#" class="question-title" onclick="showQuestionDetail(${q.id}); return false;">${q.title}</a>
-                <div class="question-body">${q.body}</div>
+                <div class="question-body">
+                    ${q.body}
+                    ${q.image ? `<img src="${q.image}" class="uploaded-image" alt="Question Image" onclick="showQuestionDetail(${q.id}); event.stopPropagation();">` : ''}
+                </div>
                 <div class="tags">
                     ${q.tags.map(tag => `<span class="tag">#${tag}</span>`).join('')}
+                    ${q.has_accepted_answer || q.status === 'Solved' ? `<span class="solved-badge">✓ Solved</span>` : ''}
                 </div>
                 <div class="feed-stats">
                     <div class="stat-item"><span>👁️</span> ${q.views} Views</div>
@@ -470,35 +496,38 @@ function showQuestionDetail(id) {
         return `
             <div class="answer-item ${a.is_accepted ? 'accepted-answer' : ''}">
                 <div class="answer-header">
-                    <div class="user-info">
-                        <img src="${aUser.avatar}" alt="${aUser.nickname}" class="avatar-sm">
-                        <div>
-                            <div class="user-name">${aUser.nickname}</div>
-                            <div class="post-meta">${timeAgo(a.created_at)}</div>
-                        </div>
-                    </div>
-                    ${isOwnAnswer ? `
-                        <div style="position: relative;">
-                            <button class="answer-menu-btn" onclick="toggleAnswerMenu(${a.id}, event)">▼</button>
-                            <div class="post-menu-dropdown" id="answer-menu-${a.id}">
-                                <button class="post-menu-item" onclick="editAnswer(${a.id})"><span class="menu-icon">✏️</span><span>편집</span></button>
-                                <button class="post-menu-item delete" onclick="confirmDeleteAnswer(${a.id})"><span class="menu-icon">🗑️</span><span>삭제</span></button>
+                    <div class="answer-header-top">
+                        <div class="user-info">
+                            <img src="${aUser.avatar}" alt="${aUser.nickname}" class="avatar-sm">
+                            <div>
+                                <div class="user-name">${aUser.nickname}</div>
+                                <div class="post-meta">${timeAgo(a.created_at)}</div>
                             </div>
                         </div>
-                    ` : ''}
+                         ${a.is_accepted ? '<div class="answer-badge-container"><div class="accepted-badge"><span style="font-size: 1.1em;">✓</span> 선택된 답변</div></div>' : ''}
+                        ${isOwnAnswer ? `
+                            <div style="position: relative; margin-left: 0.5rem;">
+                                <button class="answer-menu-btn" onclick="toggleAnswerMenu(${a.id}, event)">▼</button>
+                                <div class="post-menu-dropdown" id="answer-menu-${a.id}">
+                                    <button class="post-menu-item" onclick="editAnswer(${a.id})"><span class="menu-icon">✏️</span><span>편집</span></button>
+                                    <button class="post-menu-item delete" onclick="confirmDeleteAnswer(${a.id})"><span class="menu-icon">🗑️</span><span>삭제</span></button>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
                 </div>
                 
-                ${a.is_accepted ? '<div class="accepted-badge"><span style="font-size: 1.1em;">✓</span> 작성자가 채택한 답변입니다</div>' : ''}
-                
-                <div class="answer-body">${a.body}</div>
+                <div class="answer-body">
+                    ${a.body}
+                    ${a.image ? `<img src="${a.image}" class="uploaded-image" alt="Answer Image">` : ''}
+                </div>
                 
                 <div class="answer-actions">
                     <button class="like-btn ${likedClass}" onclick="toggleAnswerLike(${a.id})">
                         <span class="like-icon">👍</span> 좋아요 ${a.likes}개
                     </button>
-                    ${isQuestionAuthor && !a.is_accepted && !q.has_accepted_answer ? `
-                        <button class="accept-btn" onclick="acceptAnswer(${a.id})">✓ 답변 채택</button>
-                    ` : ''}
+                    ${getAcceptButtonHtml(isQuestionAuthor, a, q)}
+                </div>
                 </div>
             </div>
         `;
@@ -511,15 +540,16 @@ function showQuestionDetail(id) {
                 <span>댓글 추가</span>
             </div>
             <textarea id="new-answer-body-detail" class="answer-textarea" placeholder="댓글을 작성하세요..." style="min-height: 100px;"></textarea>
-            <div class="answer-controls" style="display: flex;">
+            <div class="answer-controls">
                  <label class="file-attachment-ui">
                     <input type="file" id="file-input-detail" style="display: none;" onchange="handleFileSelect(event, 'detail')">
                     <span>📎 파일첨부 (JPG, PNG)</span>
                     <span id="file-name-detail" class="file-name-display"></span>
                 </label>
-                <div class="answer-submit-actions">
-                    <button class="btn-primary" onclick="submitAnswer(${q.id}, 'detail')">답글 쓰기</button>
-                </div>
+            </div>
+            <img id="preview-answer-detail" class="preview-image" alt="Image Preview">
+            <div class="answer-submit-actions" style="display: flex; justify-content: flex-end; margin-top: 0.5rem;">
+                <button class="btn-primary" onclick="submitAnswer(${q.id}, 'detail')">답글 쓰기</button>
             </div>
         </div>
     `;
@@ -534,9 +564,13 @@ function showQuestionDetail(id) {
                 </div>
             </div>
             <h1 class="detail-title">${q.title}</h1>
-            <div class="detail-body">${q.body}</div>
+            <div class="detail-body">
+                ${q.body}
+                ${q.image ? `<img src="${q.image}" class="uploaded-image" alt="Question Image">` : ''}
+            </div>
             <div class="tags">
                 ${q.tags.map(tag => `<span class="tag">#${tag}</span>`).join('')}
+                ${q.has_accepted_answer || q.status === 'Solved' ? `<span class="solved-badge">✓ Solved</span>` : ''}
             </div>
             <div class="feed-stats">
                 <div class="stat-item"><span>👁️</span> ${q.views} Views</div>
@@ -574,10 +608,34 @@ function expandAnswerInput(questionId) {
 function handleFileSelect(event, questionId) {
     const input = event.target;
     const fileNameDisplay = document.getElementById(`file-name-${questionId}`);
+
+    // For answer preview in detail view
+    const previewId = questionId === 'detail' ? 'preview-answer-detail' : `preview-answer-${questionId}`;
+    const previewImg = document.getElementById(previewId);
+
     if (input.files && input.files[0]) {
-        fileNameDisplay.textContent = input.files[0].name;
+        const file = input.files[0];
+        fileNameDisplay.textContent = file.name;
+
+        // Read file for preview and storage
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            if (previewImg) {
+                previewImg.src = e.target.result;
+                previewImg.classList.add('show');
+            }
+            if (questionId === 'detail') {
+                currentAnswerImage = e.target.result;
+            }
+        };
+        reader.readAsDataURL(file);
     } else {
         fileNameDisplay.textContent = '';
+        if (previewImg) {
+            previewImg.classList.remove('show');
+            previewImg.src = '';
+        }
+        currentAnswerImage = null;
     }
 }
 
@@ -595,11 +653,15 @@ function submitAnswer(questionId, context = 'feed') {
         question_id: questionId,
         user_id: currentUser.id,
         body: body,
+        image: currentAnswerImage, // Add image data
         is_accepted: false,
         likes: 0,
         likedByMe: false,
         created_at: new Date().toISOString()
     };
+
+    // Reset image state
+    currentAnswerImage = null;
 
     allAnswers.push(newAnswer);
 
@@ -651,7 +713,18 @@ function deleteAnswer() {
 
     const idx = allAnswers.findIndex(a => a.id === answerToDelete);
     if (idx !== -1) {
-        const questionId = allAnswers[idx].question_id;
+        const deletedAnswer = allAnswers[idx];
+        const questionId = deletedAnswer.question_id;
+
+        // If the deleted answer was accepted, reset the question status
+        if (deletedAnswer.is_accepted) {
+            const q = questions.find(q => q.id === questionId);
+            if (q) {
+                q.has_accepted_answer = false;
+                q.status = 'Open';
+            }
+        }
+
         allAnswers.splice(idx, 1);
 
         const q = questions.find(q => q.id === questionId);
@@ -692,14 +765,24 @@ function acceptAnswer(answerId) {
     const answer = allAnswers.find(a => a.id === answerId);
     if (!answer) return;
 
-    allAnswers.forEach(a => {
-        if (a.question_id === answer.question_id) a.is_accepted = false;
-    });
-
-    answer.is_accepted = true;
-
     const q = questions.find(q => q.id === answer.question_id);
-    if (q) q.has_accepted_answer = true;
+    if (!q) return;
+
+    if (answer.is_accepted) {
+        // Unselect logic
+        answer.is_accepted = false;
+        q.has_accepted_answer = false;
+        q.status = 'Open';
+    } else {
+        // Reset others if multiple (optional, assuming only one accepted)
+        allAnswers.forEach(a => {
+            if (a.question_id === answer.question_id) a.is_accepted = false;
+        });
+
+        answer.is_accepted = true;
+        q.has_accepted_answer = true;
+        q.status = 'Solved'; // Mark as solved
+    }
 
     if (!questionDetailEl.classList.contains('hidden')) {
         showQuestionDetail(answer.question_id);
@@ -743,6 +826,8 @@ function editQuestion(questionId) {
     const menu = document.getElementById(`menu-${questionId}`);
     if (menu) menu.classList.remove('show');
     openModal();
+    // Re-check validity after populating values
+    checkFormValidity();
 }
 
 function confirmDelete(questionId) {
@@ -827,13 +912,25 @@ function openModal() {
     const modalTitle = modal.querySelector('h2');
     const postBtn = modal.querySelector('button[type="submit"]');
     if (editingQuestionId) {
-        modalTitle.textContent = '질문 수정';
-        postBtn.textContent = '수정 완료';
+        modalTitle.textContent = 'Edit Question'; // Changed to English for consistency
+        postBtn.textContent = 'Update'; // Changed to English for consistency
     } else {
         modalTitle.textContent = 'Ask a Question';
         postBtn.textContent = 'Post Question';
         selectedRoles = []; // Reset roles for new question
         renderRoleBadges();
+
+        // Reset file input
+        if (qFileInput) qFileInput.value = '';
+        if (qFileNameDisplay) qFileNameDisplay.textContent = '';
+        currentQuestionImage = null; // Reset image
+        if (qPreviewImg) {
+            qPreviewImg.classList.remove('show');
+            qPreviewImg.src = '';
+        }
+
+        // Check validity (will disable button since fields are empty)
+        checkFormValidity();
     }
 }
 
@@ -845,9 +942,55 @@ function closeModal() {
     renderRoleBadges();
 }
 
-askBtn.addEventListener('click', openModal);
+askBtn.addEventListener('click', () => {
+    editingQuestionId = null; // Ensure we are in create mode
+    document.getElementById('q-title').value = '';
+    document.getElementById('q-body').value = '';
+    openModal();
+});
 closeModalBtn.addEventListener('click', closeModal);
 cancelModalBtn.addEventListener('click', closeModal);
+
+// Question Form Validation & File Handler
+function checkFormValidity() {
+    const title = qTitleInput.value.trim();
+    const body = qBodyInput.value.trim();
+    if (title && body) {
+        postQuestionBtn.disabled = false;
+    } else {
+        postQuestionBtn.disabled = true;
+    }
+}
+
+if (qTitleInput) qTitleInput.addEventListener('input', checkFormValidity);
+if (qBodyInput) qBodyInput.addEventListener('input', checkFormValidity);
+
+if (qFileInput) {
+    qFileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            qFileNameDisplay.textContent = file.name;
+
+            // Preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                if (qPreviewImg) {
+                    qPreviewImg.src = e.target.result;
+                    qPreviewImg.classList.add('show');
+                }
+                currentQuestionImage = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        } else {
+            qFileNameDisplay.textContent = '';
+            if (qPreviewImg) {
+                qPreviewImg.classList.remove('show');
+                qPreviewImg.src = '';
+            }
+            currentQuestionImage = null;
+        }
+    });
+}
 
 // Role Dropdown Listener
 const roleSelect = document.getElementById('q-tags');
@@ -931,6 +1074,7 @@ questionForm.addEventListener('submit', (e) => {
             user_id: currentUser.id,
             title: title,
             body: body,
+            image: currentQuestionImage, // Add image
             status: "Open",
             views: 0,
             votes: 0,
