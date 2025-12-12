@@ -195,6 +195,10 @@ body {
     gap: 2rem;
 }
 
+.main-layout.detail-active {
+    grid-template-columns: 250px 1fr;
+}
+
 /* Sidebar Left */
 .sidebar-left .btn-primary {
     width: 100%;

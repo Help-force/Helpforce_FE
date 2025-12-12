@@ -137,6 +137,9 @@ const rolesList = [
 // DOM Elements
 const feedListEl = document.getElementById('feed-list');
 const feedHeaderEl = document.querySelector('.feed-header');
+const searchContainerEl = document.querySelector('.search-container'); // Add search container selection
+const sidebarRightEl = document.querySelector('.sidebar-right'); // Add right sidebar selection
+const mainLayoutEl = document.querySelector('.main-layout'); // Add main layout selection
 const questionDetailEl = document.getElementById('question-detail');
 const detailContentEl = document.getElementById('detail-content');
 const backToFeedBtn = document.getElementById('back-to-feed');
@@ -586,12 +589,24 @@ function showQuestionDetail(id) {
 
     feedListEl.classList.add('hidden');
     feedHeaderEl.classList.add('hidden');
+
+    // Hide Search and Sidebar
+    if (searchContainerEl) searchContainerEl.classList.add('hidden');
+    if (sidebarRightEl) sidebarRightEl.classList.add('hidden');
+    if (mainLayoutEl) mainLayoutEl.classList.add('detail-active');
+
     questionDetailEl.classList.remove('hidden');
     window.scrollTo(0, 0);
 }
 
 function hideQuestionDetail() {
     questionDetailEl.classList.add('hidden');
+
+    // Show Search and Sidebar
+    if (searchContainerEl) searchContainerEl.classList.remove('hidden');
+    if (sidebarRightEl) sidebarRightEl.classList.remove('hidden');
+    if (mainLayoutEl) mainLayoutEl.classList.remove('detail-active');
+
     feedListEl.classList.remove('hidden');
     feedHeaderEl.classList.remove('hidden');
     renderFeed(); // Re-render to show updates
