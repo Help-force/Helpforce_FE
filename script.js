@@ -2,16 +2,30 @@
 const currentUser = {
     id: 1,
     nickname: "TrailblazerUser",
-    avatar: "https://ui-avatars.com/api/?name=Trailblazer+User&background=00A1E0&color=fff"
+    crmCohort: "1기",
+    avatar: "https://ui-avatars.com/api/?name=1기&background=00A1E0&color=fff&length=2"
 };
 
 const users = [
     currentUser,
-    { id: 2, nickname: "ApexGuru", avatar: "https://ui-avatars.com/api/?name=Apex+Guru&background=random" },
-    { id: 3, nickname: "LWC_Dev", avatar: "https://ui-avatars.com/api/?name=LWC+Dev&background=random" },
-    { id: 4, nickname: "Abhishek R", avatar: "https://ui-avatars.com/api/?name=Abhishek+R&background=random" },
-    { id: 5, nickname: "Vishal Verma", avatar: "https://ui-avatars.com/api/?name=Vishal+Verma&background=random" }
+    { id: 2, nickname: "ApexGuru", crmCohort: "2기", avatar: "https://ui-avatars.com/api/?name=2기&background=random&length=2" },
+    { id: 3, nickname: "LWC_Dev", crmCohort: "3기", avatar: "https://ui-avatars.com/api/?name=3기&background=random&length=2" },
+    { id: 4, nickname: "Abhishek R", crmCohort: "4기", avatar: "https://ui-avatars.com/api/?name=4기&background=random&length=2" },
+    { id: 5, nickname: "Vishal Verma", crmCohort: "5기", avatar: "https://ui-avatars.com/api/?name=5기&background=random&length=2" }
 ];
+
+// Sync current user data from storage if available
+function syncCurrentUserWithStorage() {
+    const storedUserDataStr = localStorage.getItem('userData');
+    if (storedUserDataStr) {
+        const userData = JSON.parse(storedUserDataStr);
+        if (userData.nickname) currentUser.nickname = userData.nickname;
+        if (userData.crmCohort) currentUser.crmCohort = userData.crmCohort;
+        // Update avatar based on cohort
+        currentUser.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.crmCohort)}&background=00A1E0&color=fff&length=2`;
+    }
+}
+syncCurrentUserWithStorage();
 
 // Global Answers Data
 let allAnswers = [
@@ -1130,18 +1144,36 @@ let isLoggedIn = true;
 
 function renderHeaderProfile() {
     if (isLoggedIn) {
+        // Get stored user data if available
+        const storedUserDataStr = localStorage.getItem('userData');
+        let displayNickname = currentUser.nickname;
+        let displayEmail = 'user@example.com';
+        let displayCohort = '1기';
+        let displayAffiliation = 'Trailblazer Community';
+
+        if (storedUserDataStr) {
+            const userData = JSON.parse(storedUserDataStr);
+            if (userData.nickname) displayNickname = userData.nickname;
+            if (userData.email) displayEmail = userData.email;
+            if (userData.crmCohort) displayCohort = userData.crmCohort;
+            if (userData.affiliation) displayAffiliation = userData.affiliation;
+        }
+
+        // Create avatar with cohort text
+        const cohortAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayCohort)}&background=00A1E0&color=fff&length=2`;
+
         userProfileContainer.innerHTML = `
-            <img src="${currentUser.avatar}" alt="${currentUser.nickname}" class="avatar" id="header-avatar">
+            <img src="${cohortAvatarUrl}" alt="${displayNickname}" class="avatar" id="header-avatar">
             <div class="profile-dropdown" id="profile-dropdown">
                 <div class="dropdown-header">
-                    <img src="${currentUser.avatar}" alt="${currentUser.nickname}" class="avatar-large">
-                    <div class="dropdown-user-name">${currentUser.nickname}</div>
-                    <div class="dropdown-user-meta">Expeditioner · Innovator<br>51,600 Points</div>
+                    <img src="${cohortAvatarUrl}" alt="${displayNickname}" class="avatar-large">
+                    <div class="dropdown-user-name">${displayNickname}</div>
+                    <div class="dropdown-user-meta" style="font-size: 0.85rem; color: #666; margin-top: 4px;">
+                        ${displayEmail}<br>
+                        ${displayAffiliation}
+                    </div>
                 </div>
                 <div class="dropdown-actions">
-                    <a href="#" class="dropdown-item">Profile</a>
-                    <a href="#" class="dropdown-item">Settings</a>
-                    <a href="#" class="dropdown-item">Help & Support</a>
                     <a href="#" class="dropdown-item logout" id="logout-btn">Logout</a>
                 </div>
             </div>
