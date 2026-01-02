@@ -3,7 +3,7 @@
  * Handles all communication with the backend server.
  */
 
-const API_BASE_URL = 'http://13.211.149.164';
+const API_BASE_URL = 'https://eungu.store';
 
 // --- Helper Functions ---
 
