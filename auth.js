@@ -241,6 +241,7 @@ if (document.getElementById('login-form')) {
 
         try {
             const result = await API.auth.login({ email, password });
+            console.log('Login API Response:', result);  // 디버깅용
 
             if (result.error) {
                 if (result.status === 400) {
