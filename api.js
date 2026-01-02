@@ -68,7 +68,7 @@ const AuthAPI = {
      * POST /signup
      */
     async signup({ email, password, nickname, crm_generation, department, auth_code }) {
-        return request('/signup', {
+        return request('/users/signUp', {
             method: 'POST',
             body: JSON.stringify({ email, password, nickname, crm_generation, department, auth_code }),
         });
