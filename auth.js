@@ -262,8 +262,8 @@ if (document.getElementById('login-form')) {
             }
 
             // Store token and user data
-            if (result.accessToken) {
-                API.setAuthToken(result.accessToken);
+            if (result.access_token) {
+                API.setAuthToken(result.access_token);
             }
             if (result.user) {
                 localStorage.setItem('userData', JSON.stringify(result.user));
