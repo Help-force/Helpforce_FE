@@ -39,6 +39,33 @@ if (document.getElementById('signup-form')) {
     const emailInput = document.getElementById('email');
     const crmCohortInput = document.getElementById('crm-cohort');
 
+    const authCodeInput = document.getElementById('auth-code');
+    const verifyCodeBtn = document.getElementById('verify-code-btn');
+    const authCodeMessage = document.getElementById('auth-code-message');
+    const signupBtn = signupForm.querySelector('button[type="submit"]');
+
+    // Initial state: disable signup button
+    signupBtn.disabled = true;
+
+    // Verify code logic
+    verifyCodeBtn.addEventListener('click', () => {
+        const code = authCodeInput.value;
+        if (code === 'CRM101') {
+            authCodeMessage.textContent = '인증이 확인되었습니다';
+            authCodeMessage.className = 'validation-message success';
+            signupBtn.disabled = false;
+            authCodeInput.disabled = true;
+            verifyCodeBtn.disabled = true;
+            verifyCodeBtn.innerText = '인증완료';
+        } else {
+            authCodeMessage.textContent = '인증 코드가 올바르지 않습니다';
+            authCodeMessage.className = 'validation-message error';
+            signupBtn.disabled = true;
+            authCodeInput.classList.add('shake');
+            setTimeout(() => authCodeInput.classList.remove('shake'), 300);
+        }
+    });
+
     const reqLength = document.getElementById('req-length');
     const reqTypes = document.getElementById('req-types');
     const reqConsecutive = document.getElementById('req-consecutive');
@@ -145,6 +172,7 @@ if (document.getElementById('signup-form')) {
         // Store user data (in real app, this would be sent to server)
         const userData = {
             email,
+            nickname: document.getElementById('nickname').value,
             password, // In real app, never store plain password
             crmCohort,
             affiliation,

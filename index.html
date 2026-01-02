@@ -16,7 +16,7 @@
         <!-- Header -->
         <header class="main-header">
             <div class="header-container">
-                <div class="logo">Community Feed</div>
+                <div class="logo">Helpforce</div>
                 <div class="user-profile" id="user-profile-container">
                     <!-- Profile will be rendered by JavaScript -->
                 </div>
@@ -45,8 +45,9 @@
                 <div class="search-container">
                     <div class="search-box">
                         <select id="search-scope">
-                            <option value="content">Title + Body</option>
-                            <option value="tag">Tag</option>
+                            <option value="content">제목 + 본문</option>
+                            <option value="title">제목</option>
+                            <option value="body">본문</option>
                         </select>
                         <input type="text" id="search-input" placeholder="Search...">
                         <button id="search-btn">Search</button>
@@ -63,37 +64,85 @@
                         </select>
                     </div>
                 </div>
-
                 <div id="feed-list" class="feed-list">
                     <!-- Feed Items will be injected here -->
                 </div>
 
                 <!-- Question Detail View (Hidden by default) -->
                 <div id="question-detail" class="question-detail hidden">
-                    <button id="back-to-feed" class="btn-secondary" style="margin-bottom: 20px;">← Back to Feed</button>
-                    <div id="detail-content">
-                        <!-- Content injected by JS -->
-                    </div>
+                    <button id="back-to-feed" class="btn-secondary" style="margin-bottom: 1rem;">&larr; Back to
+                        Feed</button>
+                    <div id="detail-content"></div>
                 </div>
             </section>
 
-            <!-- Sidebar Right (Leaderboard/Tags) -->
+            <!-- Sidebar Right (Trending/Stats) -->
             <aside class="sidebar-right">
-                <div class="leaderboard-section">
+                <div class="widget">
                     <h3>Leaderboard</h3>
                     <div id="leaderboard-list" class="leaderboard-list">
-                        <!-- Leaderboard items will be injected here -->
+                        <!-- Leaderboard items injected here -->
                     </div>
                 </div>
 
-                <div class="role-tags-section">
-                    <h3>Filter by Role</h3>
-                    <div id="role-tags-list" class="role-tags-list">
-                        <!-- Role tags will be injected here -->
+                <div class="widget">
+                    <h3>Recommended Topics</h3>
+                    <div id="recommended-topics-list" class="topic-list">
+                        <!-- Topics injected here -->
                     </div>
                 </div>
             </aside>
         </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="question-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Ask a Question</h2>
+            <form id="question-form">
+                <div class="form-group">
+                    <label for="q-title">Title</label>
+                    <input type="text" id="q-title" placeholder="What's your question?" required>
+                </div>
+                <div class="form-group">
+                    <label for="q-body">Details</label>
+                    <textarea id="q-body" rows="5" placeholder="Provide more details..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="q-file" class="file-attachment-label"
+                        style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; color: var(--primary-color); font-weight: 500;">
+                        <span>📎</span> Add Image (JPG, PNG)
+                        <input type="file" id="q-file" accept=".jpg,.jpeg,.png" style="display: none;">
+                    </label>
+                    <div id="q-file-name" style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                    </div>
+                    <img id="q-preview-img" class="preview-image" alt="Image Preview">
+                </div>
+                <div class="form-group">
+                    <label for="q-tags">Role (Optional)</label>
+                    <select id="q-tags">
+                        <option value="" disabled selected>Select a role...</option>
+                        <option value="Administrator">Administrator</option>
+                        <option value="Architect">Architect</option>
+                        <option value="Business Analyst">Business Analyst</option>
+                        <option value="Consultant">Consultant</option>
+                        <option value="Customer Service Professional">Customer Service Professional</option>
+                        <option value="Data Analyst">Data Analyst</option>
+                        <option value="Developer">Developer</option>
+                        <option value="Marketer">Marketer</option>
+                        <option value="Not Applicable">Not Applicable</option>
+                        <option value="Sales Professional">Sales Professional</option>
+                        <option value="UX Designer">UX Designer</option>
+                    </select>
+                    <div id="selected-roles-container" class="selected-roles-container"></div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary close-modal-btn">Cancel</button>
+                    <button type="submit" id="post-question-btn" class="btn-primary" disabled>Post Question</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Answer Edit Modal -->
@@ -107,7 +156,7 @@
                     <textarea id="edit-answer-body" rows="5" required></textarea>
                 </div>
                 <div class="file-attachment-ui">
-                    <span>이미지 첨부 (PNG, JPG, GIF - 최대 10MB)</span>
+                    <span>File Attachment (JPG, PNG)</span>
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn-secondary close-answer-edit-btn">Cancel</button>
@@ -127,58 +176,6 @@
                 <button class="btn-cancel" id="confirm-cancel">Cancel</button>
                 <button class="btn-delete" id="confirm-delete">Delete</button>
             </div>
-        </div>
-    </div>
-
-    <!-- Question Modal (Ask/Edit) -->
-    <div id="question-modal" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <h2>Ask a Question</h2>
-            <form id="question-form">
-                <div class="form-group">
-                    <label for="q-title">Title</label>
-                    <input type="text" id="q-title" placeholder="What's your question?" required>
-                </div>
-                <div class="form-group">
-                    <label for="q-body">Details</label>
-                    <textarea id="q-body" rows="5" placeholder="Provide more details..." required></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="q-tags">Role (Optional)</label>
-                    <select id="q-role">
-                        <option value="" disabled selected>Select a role...</option>
-                        <option value="Administrator">Administrator</option>
-                        <option value="Architect">Architect</option>
-                        <option value="Business Analyst">Business Analyst</option>
-                        <option value="Consultant">Consultant</option>
-                        <option value="Customer Service Professional">Customer Service Professional</option>
-                        <option value="Data Analyst">Data Analyst</option>
-                        <option value="Developer">Developer</option>
-                        <option value="Marketer">Marketer</option>
-                        <option value="Not Applicable">Not Applicable</option>
-                        <option value="Sales Professional">Sales Professional</option>
-                        <option value="UX Designer">UX Designer</option>
-                    </select>
-                </div>
-                <div class="file-attachment-ui">
-                    <input type="file" id="q-image" accept="image/*" style="display: none;">
-                    <button type="button" class="btn-secondary" onclick="document.getElementById('q-image').click()">📷
-                        이미지 첨부</button>
-                    <span id="file-name"></span>
-                </div>
-                <div id="image-preview-container" class="hidden"
-                    style="margin-top: 10px; position: relative; display: inline-block;">
-                    <img id="image-preview" src="" alt="Preview"
-                        style="max-width: 100%; max-height: 200px; border-radius: 4px;">
-                    <button type="button" id="remove-image"
-                        style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;">&times;</button>
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary close-modal-btn">Cancel</button>
-                    <button type="submit" class="btn-primary" id="post-question-btn" disabled>Post Question</button>
-                </div>
-            </form>
         </div>
     </div>
 
