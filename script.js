@@ -254,7 +254,9 @@ function renderFeed() {
 
         // Get user info
         const userName = q.user ? q.user.nickname : '익명';
-        const userAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=00A1E0&color=fff`;
+        const crmGen = q.user && q.user.crm_generation ? q.user.crm_generation : '';
+        const avatarText = crmGen || userName.charAt(0);
+        const userAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(avatarText)}&background=00A1E0&color=fff`;
 
         // Get tags
         const tagNames = (q.tag_ids || []).map(id => getTagName(id));
@@ -442,7 +444,9 @@ async function showQuestionDetail(id) {
 
     const q = result;
     const user = q.user || { nickname: '익명' };
-    const userAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.nickname)}&background=00A1E0&color=fff`;
+    const userCrmGen = user.crm_generation || '';
+    const userAvatarText = userCrmGen || user.nickname.charAt(0);
+    const userAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(userAvatarText)}&background=00A1E0&color=fff`;
     const isQuestionAuthor = currentUser && user.id === currentUser.id;
 
     // Get tags
@@ -456,7 +460,9 @@ async function showQuestionDetail(id) {
 
     let answersHtml = answers.map(a => {
         const aUser = a.user || { nickname: '익명' };
-        const aUserAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(aUser.nickname)}&background=random`;
+        const aCrmGen = aUser.crm_generation || '';
+        const aAvatarText = aCrmGen || aUser.nickname.charAt(0);
+        const aUserAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(aAvatarText)}&background=random`;
         const isOwnAnswer = currentUser && aUser.id === currentUser.id;
         const likedClass = a.is_liked ? 'liked' : '';
 
@@ -469,12 +475,30 @@ async function showQuestionDetail(id) {
             }
         }
 
+        // Reply button for logged in users
+        const replyButtonHtml = isLoggedIn() ? `
+            <button class="reply-btn" onclick="toggleReplyForm(${a.id}, ${q.id})">💬 대댓글 달기</button>
+        ` : '';
+
+        // Reply form (hidden by default)
+        const replyFormHtml = isLoggedIn() ? `
+            <div class="reply-form-container hidden" id="reply-form-${a.id}">
+                <textarea class="answer-textarea reply-textarea" id="reply-body-${a.id}" placeholder="대댓글을 작성하세요..." style="min-height: 60px; margin-top: 0.5rem;"></textarea>
+                <div style="display: flex; justify-content: flex-end; margin-top: 0.5rem;">
+                    <button class="btn-secondary" onclick="toggleReplyForm(${a.id}, ${q.id})" style="margin-right: 0.5rem;">취소</button>
+                    <button class="btn-primary" onclick="submitReply(${q.id}, ${a.id})">답글 쓰기</button>
+                </div>
+            </div>
+        ` : '';
+
         // Child answers (replies)
         let childAnswersHtml = '';
         if (a.child_answers && a.child_answers.length > 0) {
             childAnswersHtml = a.child_answers.map(child => {
                 const childUser = child.user || { nickname: '익명' };
-                const childAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(childUser.nickname)}&background=random`;
+                const childCrmGen = childUser.crm_generation || '';
+                const childAvatarText = childCrmGen || childUser.nickname.charAt(0);
+                const childAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(childAvatarText)}&background=random`;
                 const childLikedClass = child.is_liked ? 'liked' : '';
                 return `
                     <div class="child-answer" style="margin-left: 2rem; padding: 1rem; border-left: 2px solid #e0e0e0;">
@@ -528,15 +552,19 @@ async function showQuestionDetail(id) {
                     <button class="like-btn ${likedClass}" onclick="toggleAnswerLike(${a.id})">
                         <span class="like-icon">👍</span> 좋아요 ${a.like_count || 0}개
                     </button>
+                    ${replyButtonHtml}
                     ${acceptButtonHtml}
                 </div>
+                ${replyFormHtml}
                 ${childAnswersHtml}
             </div>
         `;
     }).join('');
 
+    const currentUserCrmGen = currentUser && currentUser.crm_generation ? currentUser.crm_generation : '';
+    const currentUserAvatarText = currentUserCrmGen || (currentUser ? currentUser.nickname.charAt(0) : 'U');
     const currentUserAvatar = currentUser
-        ? `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.nickname || 'U')}&background=00A1E0&color=fff`
+        ? `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUserAvatarText)}&background=00A1E0&color=fff`
         : 'https://ui-avatars.com/api/?name=U&background=ccc&color=fff';
 
     const answerInputHtml = isLoggedIn() ? `
@@ -672,6 +700,40 @@ async function submitAnswer(questionId) {
 
     currentAnswerImage = null;
     showToast('답변이 등록되었습니다.');
+    showQuestionDetail(questionId);
+}
+
+// Toggle reply form visibility
+function toggleReplyForm(answerId, questionId) {
+    const replyForm = document.getElementById(`reply-form-${answerId}`);
+    if (replyForm) {
+        replyForm.classList.toggle('hidden');
+        if (!replyForm.classList.contains('hidden')) {
+            document.getElementById(`reply-body-${answerId}`).focus();
+        }
+    }
+}
+
+// Submit reply (대댓글)
+async function submitReply(questionId, parentAnswerId) {
+    if (!isLoggedIn()) {
+        showError('로그인이 필요합니다.');
+        return;
+    }
+
+    const body = document.getElementById(`reply-body-${parentAnswerId}`).value;
+    if (!body.trim()) {
+        showError('내용을 입력해주세요.');
+        return;
+    }
+
+    const result = await API.answers.create(questionId, { body: body, parent_answer_id: parentAnswerId });
+    if (result.error) {
+        showError(result.message || '대댓글 등록에 실패했습니다.');
+        return;
+    }
+
+    showToast('대댓글이 등록되었습니다.');
     showQuestionDetail(questionId);
 }
 
