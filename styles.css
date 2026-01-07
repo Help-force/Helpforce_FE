@@ -1204,6 +1204,51 @@ body {
     font-weight: 600;
 }
 
+/* Reply Button */
+.reply-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 0.4rem 0.8rem;
+    border-radius: var(--radius-full);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.reply-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    background-color: #f3f9ff;
+}
+
+/* Reply Form Container */
+.reply-form-container {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.reply-textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    resize: vertical;
+}
+
+.reply-textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(0, 161, 224, 0.1);
+}
+
 /* Responsive */
 @media (max-width: 900px) {
     .main-layout {
