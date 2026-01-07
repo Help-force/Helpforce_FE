@@ -55,6 +55,12 @@ async function request(endpoint, options = {}) {
             return { error: true, status: response.status, ...data };
         }
 
+        // Auto-unwrap SuccessResponse wrapper { success: true, data: ... }
+        // Some backend endpoints return this wrapper format
+        if (data && typeof data === 'object' && data.success === true && data.data !== undefined) {
+            return data.data;
+        }
+
         return data;
     } catch (error) {
         console.error('API Request Error:', error);
@@ -137,7 +143,7 @@ const QuestionsAPI = {
         formData.append('title', title);
         formData.append('body', body);
         if (tag_ids && tag_ids.length > 0) {
-            formData.append('tag_ids', JSON.stringify(tag_ids));
+            tag_ids.forEach(tagId => formData.append('tag_ids', tagId));
         }
         if (files && files.length > 0) {
             files.forEach(file => formData.append('files', file));
@@ -146,13 +152,23 @@ const QuestionsAPI = {
     },
 
     /**
-     * PATCH /questions/{question_id}
+     * PATCH /questions/{question_id} (multipart/form-data)
+     * 질문 수정 (제목, 내용, 첨부파일 모두 수정 가능)
+     * - 첨부파일 수정 시 기존 첨부파일 모두 교체됨
+     * - 첨부파일 미수정 시 기존 파일 유지
+     * - tag_ids는 FormData에 같은 키를 여러 번 append
      */
-    async update(questionId, { title, body, tag_ids }) {
-        return request(`/questions/${questionId}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ title, body, tag_ids }),
-        });
+    async update(questionId, { title, body, tag_ids, files }) {
+        const formData = new FormData();
+        if (title) formData.append('title', title);
+        if (body) formData.append('body', body);
+        if (tag_ids && tag_ids.length > 0) {
+            tag_ids.forEach(tagId => formData.append('tag_ids', tagId));
+        }
+        if (files && files.length > 0) {
+            files.forEach(file => formData.append('files', file));
+        }
+        return request(`/questions/${questionId}`, { method: 'PATCH', body: formData });
     },
 
     /**
@@ -227,7 +243,7 @@ const AnswersAPI = {
      * GET /answers/{answer_id}  (for like count)
      */
     async getLikeCount(answerId) {
-        return request(`/answers/${answerId}`, { method: 'GET' });
+        return request(`/answers/${answerId}/likes`, { method: 'GET' });
     },
 };
 

@@ -206,7 +206,7 @@ if (document.getElementById('signup-form')) {
 
             // Success
             alert('회원가입이 완료되었습니다!');
-            window.location.href = 'login.html';
+            window.location.href = 'index.html';
 
         } catch (error) {
             console.error('Signup error:', error);
@@ -271,7 +271,7 @@ if (document.getElementById('login-form')) {
             localStorage.setItem('isLoggedIn', 'true');
 
             // Redirect to main page
-            window.location.href = 'index.html';
+            window.location.href = 'main.html';
 
         } catch (error) {
             console.error('Login error:', error);
